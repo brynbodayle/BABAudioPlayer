@@ -9,7 +9,7 @@
 
 Pod::Spec.new do |s|
   s.name             = "BABAudioPlayer"
-  s.version          = "0.1.0"
+  s.version          = "0.1.2"
   s.summary          = "A convenience layer ontop of AVAplyer for iOS."
   s.description      = <<-DESC
                        A convenience layer ontop of AVAplyer for iOS that allows for easier audio playback.
