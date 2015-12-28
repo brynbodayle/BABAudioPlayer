@@ -79,6 +79,11 @@ static BABAudioPlayer  *sharedPlayer = nil;
 
 - (void)didEnterBackground:(NSNotification *)notification {
     
+    if(self.allowsBackgroundAudio) {
+        
+        return;
+    }
+    
     if(self.state == BABAudioPlayerStatePlaying) {
         
         self.shouldResumePlayback = YES;
@@ -153,7 +158,7 @@ static BABAudioPlayer  *sharedPlayer = nil;
                 case BBAudioRouteChangedBehaviourStopPlayback:
                     [self stop];
                     break;
-                default:
+                    default:
                     break;
             }
         }
@@ -169,12 +174,12 @@ static BABAudioPlayer  *sharedPlayer = nil;
                 case BBAudioRouteChangedBehaviourStopPlayback:
                     [self stop];
                     break;
-                default:
+                    default:
                     break;
             }
         }
             break;
-        default:
+            default:
             break;
     }
 }
@@ -423,7 +428,7 @@ static BABAudioPlayer  *sharedPlayer = nil;
                     }
                 }
                     break;
-                default:
+                    default:
                     break;
             }
         }];
@@ -621,7 +626,7 @@ static BABAudioPlayer  *sharedPlayer = nil;
                 [self next];
             case UIEventSubtypeRemoteControlPreviousTrack:
                 [self previous];
-            default:
+                default:
                 break;
         }
     }
