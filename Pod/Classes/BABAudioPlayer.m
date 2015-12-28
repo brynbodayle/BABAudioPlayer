@@ -211,31 +211,29 @@ static BABAudioPlayer  *sharedPlayer = nil;
         [self clearCurrentMediaItem];
     }
     
-    __weak typeof(self)weakSelf = self;
-    
     dispatch_async(self.playbackQueue, ^{
         
         AVPlayerItem *item = [[AVPlayerItem alloc] initWithURL:audioItem.url];
-        weakSelf.player = [[AVPlayer alloc] initWithPlayerItem:item];
-        weakSelf.newMediaItem = YES;
+        self.player = [[AVPlayer alloc] initWithPlayerItem:item];
+        self.newMediaItem = YES;
         
-        [[NSNotificationCenter defaultCenter] addObserver:weakSelf selector:@selector(didEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:weakSelf selector:@selector(willEnterForeground:) name:UIApplicationWillEnterForegroundNotification object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:weakSelf selector:@selector(playbackDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
-        [weakSelf.player.currentItem addObserver:weakSelf forKeyPath:NSStringFromSelector(@selector(status)) options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial) context:NULL];
-        [weakSelf.player.currentItem addObserver:weakSelf forKeyPath:NSStringFromSelector(@selector(loadedTimeRanges)) options:NSKeyValueObservingOptionNew context:NULL];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willEnterForeground:) name:UIApplicationWillEnterForegroundNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playbackDidPlayToEndTime:) name:AVPlayerItemDidPlayToEndTimeNotification object:nil];
+        [self.player.currentItem addObserver:self forKeyPath:NSStringFromSelector(@selector(status)) options:(NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial) context:NULL];
+        [self.player.currentItem addObserver:self forKeyPath:NSStringFromSelector(@selector(loadedTimeRanges)) options:NSKeyValueObservingOptionNew context:NULL];
         
-        [weakSelf.player addObserver:weakSelf forKeyPath:NSStringFromSelector(@selector(rate)) options:NSKeyValueObservingOptionNew context:NULL];
+        [self.player addObserver:self forKeyPath:NSStringFromSelector(@selector(rate)) options:NSKeyValueObservingOptionNew context:NULL];
         
-        weakSelf.currentAudioItem = audioItem;
+        self.currentAudioItem = audioItem;
         
-        if(weakSelf.showsNowPlayingMetadata){
-            [weakSelf updateNowPlayingMetadata:audioItem];
+        if(self.showsNowPlayingMetadata){
+            [self updateNowPlayingMetadata:audioItem];
         }
         
         [[AVAudioSession sharedInstance] setActive:YES error:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:weakSelf selector:@selector(audioRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:weakSelf selector:@selector(audioInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioRouteChanged:) name:AVAudioSessionRouteChangeNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(audioInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
         
     });
     
@@ -253,23 +251,21 @@ static BABAudioPlayer  *sharedPlayer = nil;
 
 - (void)play {
     
-    __weak typeof(self)weakSelf = self;
-    
     dispatch_async(self.playbackQueue, ^{
         
-        [weakSelf.player play];
+        [self.player play];
         
         dispatch_sync(dispatch_get_main_queue(), ^{
             
-            if(!weakSelf.playbackObserver)
-                [weakSelf startTimeObserver];
+            if(!self.playbackObserver)
+                [self startTimeObserver];
             
-            if(weakSelf.allowsBackgroundAudio) {
+            if(self.allowsBackgroundAudio) {
                 
                 [[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
             }
             
-            if(weakSelf.allowsMultitaskerControls)
+            if(self.allowsMultitaskerControls)
                 [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
             
         });
@@ -455,32 +451,30 @@ static BABAudioPlayer  *sharedPlayer = nil;
     
     __block AVAsset *asset = self.player.currentItem.asset;
     
-    __weak typeof(self)weakSelf = self;
-    
     [self.player.currentItem.asset loadValuesAsynchronouslyForKeys:@[@"commonMetadata"] completionHandler:^{
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(void) {
             
             NSMutableDictionary *nowPlayingInfo = [NSMutableDictionary dictionaryWithCapacity:5];
             
-            AVMetadataItem *title = [weakSelf localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyTitle];
+            AVMetadataItem *title = [self localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyTitle];
             
             if(title) {
                 nowPlayingInfo[MPMediaItemPropertyTitle] = title.stringValue;
             }
             
-            AVMetadataItem *artist = [weakSelf localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyArtist];
+            AVMetadataItem *artist = [self localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyArtist];
             
             if(artist) {
                 nowPlayingInfo[MPMediaItemPropertyArtist] = artist.stringValue;
             }
             
-            AVMetadataItem *albumName = [weakSelf localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyAlbumName];
+            AVMetadataItem *albumName = [self localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyAlbumName];
             
             if(albumName) {
                 nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = albumName.stringValue;
             }
             
-            AVMetadataItem *artwork = [weakSelf localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyArtwork];
+            AVMetadataItem *artwork = [self localizedMetadataItemFromArray:asset.commonMetadata withKey:AVMetadataCommonKeyArtwork];
             
             if(artwork) {
                 
@@ -515,13 +509,13 @@ static BABAudioPlayer  *sharedPlayer = nil;
             
             dispatch_async(dispatch_get_main_queue(), ^{
                 
-                if([weakSelf.currentAudioItem isEqual:audioItem]) {
+                if([self.currentAudioItem isEqual:audioItem]) {
                     
                     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nowPlayingInfo;
                     
-                    if([weakSelf.delegate respondsToSelector:@selector(audioPlayer:didLoadMetadata:forAudioItem:)]) {
+                    if([self.delegate respondsToSelector:@selector(audioPlayer:didLoadMetadata:forAudioItem:)]) {
                         
-                        [weakSelf.delegate audioPlayer:weakSelf didLoadMetadata:nowPlayingInfo forAudioItem:audioItem];
+                        [self.delegate audioPlayer:self didLoadMetadata:nowPlayingInfo forAudioItem:audioItem];
                     }
                 }
             });
